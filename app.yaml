@@ -1,0 +1,18 @@
+name: class-central-sync
+region: nyc
+
+jobs:
+  - name: sync
+    kind: SCHEDULED
+    schedule:
+      cron: '15 * * * *'
+      time_zone: Etc/UTC
+
+    github:
+      repo: scissorsneedfoodtoo/class-central-sync
+      branch: main
+      deploy_on_push: true
+
+    environment_slug: node-js
+    instance_size_slug: apps-s-1vcpu-2gb
+    run_command: node ./src/run.js

@@ -1,0 +1,19 @@
+# Keys
+.env
+.env.*
+
+# Logs
+*.log
+
+node_modules/
+.eslintcache
+
+# Local dry-run output
+*.local.json
+
+# OSX
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
