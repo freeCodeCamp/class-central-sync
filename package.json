@@ -19,7 +19,7 @@
     "lint:code": "eslint . --cache",
     "lint:pretty": "prettier --check .",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "repository": {
     "type": "git",
