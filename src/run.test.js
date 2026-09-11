@@ -95,6 +95,29 @@ describe('run():', () => {
     expect(entry.courses[0]).not.toHaveProperty('description');
   });
 
+  test('caps stored courses at 4, News never shows more than that', async () => {
+    fetchRelatedCoursesForPosts.mockImplementation(async function* (posts) {
+      for (const post of posts) {
+        yield {
+          post,
+          courseData: {
+            courses: Array.from({ length: 10 }, (_, i) => ({
+              id: i,
+              name: `Course ${i} for ${post.slug}`,
+            })),
+            subjects: [],
+          },
+        };
+      }
+    });
+
+    await run();
+
+    const entry = stored.posts[RECURSION_POST_ID];
+    expect(entry.courses).toHaveLength(4);
+    expect(entry.courses.map((course) => course.id)).toEqual([0, 1, 2, 3]);
+  });
+
   test('does nothing on a warm cache with fresh, unchanged entries', async () => {
     await run();
     fetchRelatedCoursesForPosts.mockClear();

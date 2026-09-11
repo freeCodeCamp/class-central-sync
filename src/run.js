@@ -19,6 +19,9 @@ const CHECKPOINT_EVERY = 25;
 // Cap calls to Class Central - the rest roll to the next run
 const MAX_POSTS_PER_RUN = 3000;
 
+// News shows at most this many courses per post
+const MAX_COURSES_PER_POST = 4;
+
 // Main entry point that accepts optional overrides for testing
 export const run = async ({
   fetchPosts = hashnode.fetchPosts,
@@ -92,7 +95,7 @@ export const run = async ({
         fetchedAt: new Date().toISOString(),
         slug: post.slug,
         title: post.title,
-        courses: courses.map(pickCourseFields),
+        courses: courses.slice(0, MAX_COURSES_PER_POST).map(pickCourseFields),
         subjects: subjects.map(pickSubjectFields),
       };
       succeeded++;
