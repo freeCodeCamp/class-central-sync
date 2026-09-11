@@ -33,7 +33,7 @@ const query = gql`
   }
 `;
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100;
 // Log progress every N pages during pagination.
 const LOG_EVERY_PAGES = 5;
 
