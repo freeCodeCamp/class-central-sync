@@ -238,6 +238,40 @@ describe('run():', () => {
     expect(Object.keys(stored.posts).sort()).toEqual([...MOCK_POST_IDS].sort());
   });
 
+  test('persists a deleted post (and its now-orphaned lookups) even when every remaining post is fresh', async () => {
+    // Give the post we're about to delete a course no other post references,
+    // so we can tell whether it actually gets pruned
+    fetchRelatedCoursesForPosts.mockImplementation(async function* (posts) {
+      for (const post of posts) {
+        yield post.id === RECURSION_POST_ID
+          ? {
+              post,
+              courseData: {
+                courses: [{ id: 999, name: 'Only for recursion post' }],
+                subjects: [],
+              },
+            }
+          : { post, courseData: coursesFor(post) };
+      }
+    });
+    await run();
+    expect(stored.posts).toHaveProperty(RECURSION_POST_ID);
+    expect(stored.courses[999]).toBeDefined();
+
+    fetchPosts.mockResolvedValue(
+      mockPosts.filter((post) => post.id !== RECURSION_POST_ID)
+    );
+    fetchRelatedCoursesForPosts.mockClear();
+    saveCache.mockClear();
+
+    await run();
+
+    expect(fetchRelatedCoursesForPosts).not.toHaveBeenCalled();
+    expect(saveCache).toHaveBeenCalled();
+    expect(stored.posts).not.toHaveProperty(RECURSION_POST_ID);
+    expect(stored.courses[999]).toBeUndefined();
+  });
+
   test('prunes lookup-table entries no post references anymore', async () => {
     // Left over from a course/subject that no post points to anymore
     stored.courses[999] = { id: 999, name: 'Orphaned course' };

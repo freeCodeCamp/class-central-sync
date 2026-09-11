@@ -58,8 +58,12 @@ export const run = async ({
 
   // Drop entries for deleted posts
   const currentIds = new Set(posts.map((post) => post.id));
+  let deletedAny = false;
   Object.keys(cache.posts).forEach((id) => {
-    if (!currentIds.has(id)) delete cache.posts[id];
+    if (!currentIds.has(id)) {
+      delete cache.posts[id];
+      deletedAny = true;
+    }
   });
 
   const postsToSync = posts
@@ -83,6 +87,15 @@ export const run = async ({
     .slice(0, MAX_POSTS_PER_RUN);
 
   if (!postsToSync.length) {
+    // Even with nothing to fetch, a deletion above still needs persisting -
+    // otherwise it (and any lookup entries only it referenced) never gets
+    // saved
+    if (deletedAny) {
+      pruneUnreferencedLookups(cache);
+      assertValidCache(cache);
+      await saveCache(cache);
+    }
+
     console.log(
       'Every post already has up-to-date course data. Nothing to do.'
     );
