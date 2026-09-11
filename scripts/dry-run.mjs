@@ -12,7 +12,7 @@ const dest = new URL('../related-courses-cache.local.json', import.meta.url);
 
 await run({
   fetchPosts: async () => JSON.parse(readFileSync(fixture)),
-  loadCache: async () => ({ posts: {} }),
+  loadCache: async () => ({ posts: {}, courses: {}, subjects: {} }),
   saveCache: async (cache) => {
     const document = { generatedAt: new Date().toISOString(), ...cache };
     writeFileSync(dest, JSON.stringify(document, null, 2) + '\n');
@@ -22,7 +22,11 @@ await run({
 const written = JSON.parse(readFileSync(dest));
 for (const post of Object.values(written.posts)) {
   console.log(
-    `  ${post.slug}: ${post.courses.length} courses, ${post.subjects.length} subjects`
+    `  ${post.slug}: ${post.courseIds.length} courses, ${post.subjectSlugs.length} subjects`
   );
 }
+console.log(
+  `\n${Object.keys(written.courses).length} unique courses, ` +
+    `${Object.keys(written.subjects).length} unique subjects`
+);
 console.log(`\nWrote ${dest.pathname}`);

@@ -22,10 +22,12 @@ const doc = {
       fetchedAt: new Date().toISOString(),
       slug: 'spaces-check',
       title: 'Spaces check',
-      courses: [],
-      subjects: [],
+      courseIds: [],
+      subjectSlugs: [],
     },
   },
+  courses: {},
+  subjects: {},
 };
 
 console.log(`Writing ${TEST_KEY}...`);

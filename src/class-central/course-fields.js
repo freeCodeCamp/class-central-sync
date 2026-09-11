@@ -13,7 +13,9 @@ export const pickCourseFields = (course) => ({
   provider: { name: course.provider?.name },
 });
 
+// `slug` used as a dedupe key in the subjects lookup table
 export const pickSubjectFields = (subject) => ({
+  slug: subject.slug,
   name: subject.name,
   url: subject.url,
 });

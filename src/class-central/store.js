@@ -28,7 +28,8 @@ export const loadCache = async (key = CACHE_KEY) => {
     );
     return JSON.parse(await res.Body.transformToString());
   } catch (error) {
-    if (error.name === 'NoSuchKey') return { posts: {} };
+    if (error.name === 'NoSuchKey')
+      return { posts: {}, courses: {}, subjects: {} };
     throw error;
   }
 };

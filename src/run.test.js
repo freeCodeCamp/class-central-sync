@@ -49,7 +49,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
-  stored = { posts: {} };
+  stored = { posts: {}, courses: {}, subjects: {} };
 
   fetchPosts.mockResolvedValue(mockPosts);
   loadCache.mockImplementation(async () => structuredClone(stored));
@@ -78,21 +78,41 @@ describe('run():', () => {
     expect(entry).toMatchObject({
       slug: 'what-is-recursion',
       title: 'How Does Recursion Work? Explained with Code Examples',
-      courses: [
-        expect.objectContaining({
-          id: 1,
-          name: expect.stringContaining('what-is-recursion'),
-          url: { go: expect.stringContaining('what-is-recursion') },
-          rating: { provider: null },
-        }),
-      ],
+      courseIds: [1],
+      subjectSlugs: ['subject'],
     });
     expect(typeof entry.contentHash).toBe('string');
     expect(Number.isNaN(Date.parse(entry.fetchedAt))).toBe(false);
 
+    // The course/subject data lives once in the lookup tables, not
+    // duplicated on the post entry
+    expect(stored.courses[1]).toMatchObject({
+      id: 1,
+      name: expect.stringContaining('what-is-recursion'),
+      url: { go: expect.stringContaining('what-is-recursion') },
+      rating: { provider: null },
+    });
+    expect(stored.subjects.subject).toEqual({
+      slug: 'subject',
+      name: 'Subject',
+      url: 'https://example.com/subject',
+    });
+
     // Fields Class Central returns but News never renders are dropped
-    expect(entry.courses[0]).not.toHaveProperty('slug');
-    expect(entry.courses[0]).not.toHaveProperty('description');
+    expect(stored.courses[1]).not.toHaveProperty('slug');
+    expect(stored.courses[1]).not.toHaveProperty('description');
+  });
+
+  test('shares one lookup-table entry across posts with the same course', async () => {
+    await run();
+
+    // Every mock post resolves to the same course id via coursesFor(), just
+    // with a different name - only the last write survives, and every post
+    // still points at the one shared entry
+    expect(Object.keys(stored.courses)).toEqual(['1']);
+    for (const id of MOCK_POST_IDS) {
+      expect(stored.posts[id].courseIds).toEqual([1]);
+    }
   });
 
   test('caps stored courses at 4, News never shows more than that', async () => {
@@ -114,8 +134,8 @@ describe('run():', () => {
     await run();
 
     const entry = stored.posts[RECURSION_POST_ID];
-    expect(entry.courses).toHaveLength(4);
-    expect(entry.courses.map((course) => course.id)).toEqual([0, 1, 2, 3]);
+    expect(entry.courseIds).toEqual([0, 1, 2, 3]);
+    expect(Object.keys(stored.courses).sort()).toEqual(['0', '1', '2', '3']);
   });
 
   test('caps stored subjects at 1, News only links to the first', async () => {
@@ -145,9 +165,14 @@ describe('run():', () => {
     await run();
 
     const entry = stored.posts[RECURSION_POST_ID];
-    expect(entry.subjects).toEqual([
-      { name: 'First subject', url: 'https://example.com/subject/first' },
-    ]);
+    expect(entry.subjectSlugs).toEqual(['first']);
+    expect(stored.subjects).toEqual({
+      first: {
+        slug: 'first',
+        name: 'First subject',
+        url: 'https://example.com/subject/first',
+      },
+    });
   });
 
   test('does nothing on a warm cache with fresh, unchanged entries', async () => {
@@ -203,14 +228,25 @@ describe('run():', () => {
       fetchedAt: new Date().toISOString(),
       slug: 'deleted-post',
       title: 'Deleted post',
-      courses: [],
-      subjects: [],
+      courseIds: [],
+      subjectSlugs: [],
     };
 
     await run();
 
     expect(stored.posts.deadbeefdeadbeefdeadbeef).toBeUndefined();
     expect(Object.keys(stored.posts).sort()).toEqual([...MOCK_POST_IDS].sort());
+  });
+
+  test('prunes lookup-table entries no post references anymore', async () => {
+    // Left over from a course/subject that no post points to anymore
+    stored.courses[999] = { id: 999, name: 'Orphaned course' };
+    stored.subjects.orphaned = { slug: 'orphaned', name: 'Orphaned subject' };
+
+    await run();
+
+    expect(stored.courses[999]).toBeUndefined();
+    expect(stored.subjects.orphaned).toBeUndefined();
   });
 
   test('warns and skips a post whose fetch fails, still saving the rest', async () => {

@@ -69,8 +69,9 @@ describe('pickCourseFields:', () => {
 });
 
 describe('pickSubjectFields:', () => {
-  test('keeps only name and url', () => {
+  test('keeps slug, name, and url', () => {
     expect(pickSubjectFields(rawSubject())).toEqual({
+      slug: 'drawing',
       name: 'Drawing',
       url: 'https://www.classcentral.com/subject/drawing?ref=fcc',
     });

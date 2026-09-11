@@ -25,6 +25,26 @@ const MAX_COURSES_PER_POST = 4;
 // News uses only the first subject to link back to Class Central
 const MAX_SUBJECTS_PER_POST = 1;
 
+// Courses/subjects can fall out of every post's reference list (a post's
+// content changes, or the post itself is deleted) - drop them from the
+// lookup tables too so the cache doesn't grow unbounded over time
+const pruneUnreferencedLookups = (cache) => {
+  const referencedCourseIds = new Set();
+  const referencedSubjectSlugs = new Set();
+
+  Object.values(cache.posts).forEach((entry) => {
+    entry.courseIds.forEach((id) => referencedCourseIds.add(id));
+    entry.subjectSlugs.forEach((slug) => referencedSubjectSlugs.add(slug));
+  });
+
+  Object.keys(cache.courses).forEach((id) => {
+    if (!referencedCourseIds.has(Number(id))) delete cache.courses[id];
+  });
+  Object.keys(cache.subjects).forEach((slug) => {
+    if (!referencedSubjectSlugs.has(slug)) delete cache.subjects[slug];
+  });
+};
+
 // Main entry point that accepts optional overrides for testing
 export const run = async ({
   fetchPosts = hashnode.fetchPosts,
@@ -33,6 +53,8 @@ export const run = async ({
 } = {}) => {
   const posts = await fetchPosts();
   const cache = await loadCache();
+  cache.courses ??= {};
+  cache.subjects ??= {};
 
   // Drop entries for deleted posts
   const currentIds = new Set(posts.map((post) => post.id));
@@ -90,18 +112,32 @@ export const run = async ({
     } else {
       const { courses, subjects } = courseData;
 
-      // Store the content hash to skip unchanged posts next run, a timestamp,
-      // the slug/title for easier debugging of the raw cache, and a trimmed
-      // list of courses/subjects (see course-fields.js)
+      // Trim courses/subjects (see course-fields.js), then store each one
+      // once in the lookup tables so repeats across posts aren't duplicated
+      const postCourses = courses
+        .slice(0, MAX_COURSES_PER_POST)
+        .map(pickCourseFields);
+      const postSubjects = subjects
+        .slice(0, MAX_SUBJECTS_PER_POST)
+        .map(pickSubjectFields);
+
+      postCourses.forEach((course) => {
+        cache.courses[course.id] = course;
+      });
+      postSubjects.forEach((subject) => {
+        cache.subjects[subject.slug] = subject;
+      });
+
+      // Store the content hash to skip unchanged posts next run, a
+      // timestamp, the slug/title for easier debugging of the raw cache,
+      // and references into the lookup tables above
       cache.posts[post.id] = {
         contentHash: post.contentHash,
         fetchedAt: new Date().toISOString(),
         slug: post.slug,
         title: post.title,
-        courses: courses.slice(0, MAX_COURSES_PER_POST).map(pickCourseFields),
-        subjects: subjects
-          .slice(0, MAX_SUBJECTS_PER_POST)
-          .map(pickSubjectFields),
+        courseIds: postCourses.map((course) => course.id),
+        subjectSlugs: postSubjects.map((subject) => subject.slug),
       };
       succeeded++;
     }
@@ -113,6 +149,8 @@ export const run = async ({
       await saveCache(cache);
     }
   }
+
+  pruneUnreferencedLookups(cache);
 
   assertValidCache(cache);
   await saveCache(cache);
