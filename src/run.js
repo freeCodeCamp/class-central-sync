@@ -159,6 +159,8 @@ export const run = async ({
       console.log(
         `  [${processed}/${total}] ${succeeded} fetched, ${failed} failed - saving checkpoint`
       );
+      pruneUnreferencedLookups(cache);
+      assertValidCache(cache);
       await saveCache(cache);
     }
   }

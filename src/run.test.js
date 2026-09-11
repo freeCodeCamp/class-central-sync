@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 
 import { run } from './run.js';
+import { assertValidCache } from './class-central/validate-cache.js';
 
 const mockPosts = JSON.parse(
   readFileSync(
@@ -281,6 +282,40 @@ describe('run():', () => {
 
     expect(stored.courses[999]).toBeUndefined();
     expect(stored.subjects.orphaned).toBeUndefined();
+  });
+
+  test('prunes and validates the cache at each checkpoint save, not just the final one', async () => {
+    // CHECKPOINT_EVERY in run.js is 25 - use enough posts to cross one
+    // checkpoint boundary, plus a final save for the 26th post
+    const manyPosts = Array.from({ length: 26 }, (_, i) => ({
+      id: `post-${i}`,
+      slug: `post-${i}`,
+      title: `Post ${i}`,
+      content: { html: `<p>Enough content to pass the length check.</p>` },
+    }));
+    fetchPosts.mockResolvedValue(manyPosts);
+
+    // Left over from a course/subject none of these posts reference
+    stored.courses[999] = { id: 999, name: 'Orphaned course' };
+    stored.subjects.orphaned = { slug: 'orphaned', name: 'Orphaned subject' };
+
+    const snapshots = [];
+    saveCache.mockImplementation(async (cache) => {
+      snapshots.push(structuredClone(cache));
+      stored = snapshots.at(-1);
+    });
+
+    await run();
+
+    // One checkpoint save (at post 25) plus the final save
+    expect(snapshots.length).toBeGreaterThanOrEqual(2);
+
+    // The checkpoint snapshot - not just the final one - should already be
+    // pruned and internally consistent
+    const checkpointSnapshot = snapshots[0];
+    expect(checkpointSnapshot.courses[999]).toBeUndefined();
+    expect(checkpointSnapshot.subjects.orphaned).toBeUndefined();
+    expect(() => assertValidCache(checkpointSnapshot)).not.toThrow();
   });
 
   test('warns and skips a post whose fetch fails, still saving the rest', async () => {
