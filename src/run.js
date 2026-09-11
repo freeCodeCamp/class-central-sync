@@ -16,8 +16,9 @@ import { assertConfig } from './config.js';
 // Persist progress every N posts so a killed run keeps its rate-limited work
 const CHECKPOINT_EVERY = 25;
 
-// Cap calls to Class Central - the rest roll to the next run
-const MAX_POSTS_PER_RUN = 3000;
+// Cap calls to Class Central so a run finishes within the platform's job
+// timeout instead of being killed mid-loop - the rest roll to the next run
+const MAX_POSTS_PER_RUN = 900;
 
 // News shows at most this many courses per post
 const MAX_COURSES_PER_POST = 4;
