@@ -118,6 +118,38 @@ describe('run():', () => {
     expect(entry.courses.map((course) => course.id)).toEqual([0, 1, 2, 3]);
   });
 
+  test('caps stored subjects at 1, News only links to the first', async () => {
+    fetchRelatedCoursesForPosts.mockImplementation(async function* (posts) {
+      for (const post of posts) {
+        yield {
+          post,
+          courseData: {
+            courses: [],
+            subjects: [
+              {
+                name: 'First subject',
+                slug: 'first',
+                url: 'https://example.com/subject/first',
+              },
+              {
+                name: 'Second subject',
+                slug: 'second',
+                url: 'https://example.com/subject/second',
+              },
+            ],
+          },
+        };
+      }
+    });
+
+    await run();
+
+    const entry = stored.posts[RECURSION_POST_ID];
+    expect(entry.subjects).toEqual([
+      { name: 'First subject', url: 'https://example.com/subject/first' },
+    ]);
+  });
+
   test('does nothing on a warm cache with fresh, unchanged entries', async () => {
     await run();
     fetchRelatedCoursesForPosts.mockClear();

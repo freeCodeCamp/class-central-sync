@@ -22,6 +22,9 @@ const MAX_POSTS_PER_RUN = 3000;
 // News shows at most this many courses per post
 const MAX_COURSES_PER_POST = 4;
 
+// News uses only the first subject to link back to Class Central
+const MAX_SUBJECTS_PER_POST = 1;
+
 // Main entry point that accepts optional overrides for testing
 export const run = async ({
   fetchPosts = hashnode.fetchPosts,
@@ -96,7 +99,9 @@ export const run = async ({
         slug: post.slug,
         title: post.title,
         courses: courses.slice(0, MAX_COURSES_PER_POST).map(pickCourseFields),
-        subjects: subjects.map(pickSubjectFields),
+        subjects: subjects
+          .slice(0, MAX_SUBJECTS_PER_POST)
+          .map(pickSubjectFields),
       };
       succeeded++;
     }
