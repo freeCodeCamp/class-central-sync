@@ -2,7 +2,7 @@ name: class-central-sync
 region: nyc
 
 jobs:
-  - name: sync
+  - name: class-central-sync
     kind: SCHEDULED
     schedule:
       cron: '15 * * * *'
@@ -15,4 +15,4 @@ jobs:
 
     environment_slug: node-js
     instance_size_slug: apps-s-1vcpu-2gb
-    run_command: node ./src/run.js
+    run_command: pnpm start
