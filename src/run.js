@@ -4,6 +4,10 @@ import {
   hashContent,
 } from './class-central/content.js';
 import { fetchRelatedCoursesForPosts } from './class-central/api.js';
+import {
+  pickCourseFields,
+  pickSubjectFields,
+} from './class-central/course-fields.js';
 import * as store from './class-central/store.js';
 import { isFresh } from './class-central/freshness.js';
 import { assertValidCache } from './class-central/validate-cache.js';
@@ -80,14 +84,16 @@ export const run = async ({
     } else {
       const { courses, subjects } = courseData;
 
-      // Store raw with additional post slug and title for easier debugging
+      // Store the content hash to skip unchanged posts next run, a timestamp,
+      // the slug/title for easier debugging of the raw cache, and a trimmed
+      // list of courses/subjects (see course-fields.js)
       cache.posts[post.id] = {
         contentHash: post.contentHash,
         fetchedAt: new Date().toISOString(),
         slug: post.slug,
         title: post.title,
-        courses,
-        subjects,
+        courses: courses.map(pickCourseFields),
+        subjects: subjects.map(pickSubjectFields),
       };
       succeeded++;
     }

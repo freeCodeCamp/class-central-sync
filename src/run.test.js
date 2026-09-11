@@ -12,8 +12,18 @@ const MOCK_POST_IDS = mockPosts.map((post) => post.id);
 const RECURSION_POST_ID = '66d4608b230dff016690584b';
 
 const coursesFor = (post) => ({
-  courses: [{ id: 1, name: `Course for ${post.slug}`, slug: `c-${post.slug}` }],
-  subjects: [{ name: 'Subject', slug: 'subject' }],
+  courses: [
+    {
+      id: 1,
+      name: `Course for ${post.slug}`,
+      slug: `c-${post.slug}`,
+      description: 'Discarded during trimming',
+      url: { go: `https://example.com/go/${post.slug}` },
+    },
+  ],
+  subjects: [
+    { name: 'Subject', slug: 'subject', url: 'https://example.com/subject' },
+  ],
 });
 
 const yieldSuccessForAll = async function* (posts) {
@@ -70,12 +80,19 @@ describe('run():', () => {
       title: 'How Does Recursion Work? Explained with Code Examples',
       courses: [
         expect.objectContaining({
+          id: 1,
           name: expect.stringContaining('what-is-recursion'),
+          url: { go: expect.stringContaining('what-is-recursion') },
+          rating: { provider: null },
         }),
       ],
     });
     expect(typeof entry.contentHash).toBe('string');
     expect(Number.isNaN(Date.parse(entry.fetchedAt))).toBe(false);
+
+    // Fields Class Central returns but News never renders are dropped
+    expect(entry.courses[0]).not.toHaveProperty('slug');
+    expect(entry.courses[0]).not.toHaveProperty('description');
   });
 
   test('does nothing on a warm cache with fresh, unchanged entries', async () => {
