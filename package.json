@@ -7,7 +7,7 @@
     "node": ">=24",
     "pnpm": ">=10"
   },
-  "packageManager": "pnpm@12.12.1",
+  "packageManager": "pnpm@12.13.0",
   "main": "src/run.js",
   "scripts": {
     "start": "node ./src/run.js",
