@@ -16,13 +16,13 @@ Each run (a scheduled job on DigitalOcean App Platform, `15 * * * *`):
 
 1. Fetch all English posts from Hashnode.
 2. Load the cache from Spaces; drop entries for deleted posts.
-3. Queue posts that are new, edited, or last fetched over 24h ago (max 3,000/run).
+3. Queue posts that are new, edited, or last fetched over 24h ago (max 900/run).
 4. Call Class Central `/related` one post at a time (~1/sec); failed posts retry
    next run.
 5. Checkpoint every 25 posts, then validate and write the object with a fresh
    `generatedAt`.
 
-The publication has ~13,000 posts, so a cold start takes ~5 hourly runs to fully
+The publication has ~13,000 posts, so a cold start takes ~15 hourly runs to fully
 populate the cache. In steady state each run only refreshes the few hundred posts
 that are new or past the 24h window.
 
@@ -41,16 +41,49 @@ Spaces with its own read credentials before each build.
       "fetchedAt": "2026-09-08T12:14:03.000Z",
       "slug": "what-is-recursion",
       "title": "How Does Recursion Work?",
-      "courses": [/* raw Class Central objects */],
-      "subjects": [/* raw Class Central objects */]
+      "courseIds": [21440, 86534],
+      "subjectSlugs": ["programming"]
+    }
+  },
+  "courses": {
+    "21440": {
+      "id": 21440,
+      "name": "…",
+      "url": { "go": "https://www.classcentral.com/course/…?go=1&ref=fcc" },
+      "imageUrl": "…",
+      "instructors": "…",
+      "level": "beginner",
+      "certificate": true,
+      "effort": "…",
+      "rating": { "provider": { "average": 4.6, "count": 1846 } },
+      "provider": { "name": "Coursera" }
+    }
+  },
+  "subjects": {
+    "programming": {
+      "slug": "programming",
+      "name": "Programming",
+      "url": "https://www.classcentral.com/subject/programming?ref=fcc"
     }
   }
 }
 ```
 
-`courses` and `subjects` are whatever Class Central returns, stored untouched;
-`news` does all display formatting. A post absent from `posts`, or with an empty
-`courses` array, shows Google ads instead.
+Each post references its courses and subjects by ID/slug, in the order Class
+Central ranked them, and each one is stored once in the `courses`/`subjects`
+lookup tables so repeats across posts aren't duplicated. Unreferenced lookup
+entries are pruned on every write.
+
+- **Courses:** every course Class Central returns is kept (currently 10 per
+  post).
+- **Subjects:** only the first is kept, since `news` uses it to link back to
+  Class Central.
+- **Fields:** both are trimmed to the fields `news` renders
+  ([`course-fields.js`](src/class-central/course-fields.js)); `news` does all
+  display formatting.
+
+A post absent from `posts`, or with an empty `courseIds` array, shows Google ads
+instead.
 
 ## Local development
 

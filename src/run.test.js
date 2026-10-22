@@ -116,7 +116,7 @@ describe('run():', () => {
     }
   });
 
-  test('caps stored courses at 4, News never shows more than that', async () => {
+  test('stores every returned course, News displays them all', async () => {
     fetchRelatedCoursesForPosts.mockImplementation(async function* (posts) {
       for (const post of posts) {
         yield {
@@ -135,8 +135,13 @@ describe('run():', () => {
     await run();
 
     const entry = stored.posts[RECURSION_POST_ID];
-    expect(entry.courseIds).toEqual([0, 1, 2, 3]);
-    expect(Object.keys(stored.courses).sort()).toEqual(['0', '1', '2', '3']);
+    const allIds = Array.from({ length: 10 }, (_, i) => i);
+    expect(entry.courseIds).toEqual(allIds);
+    expect(
+      Object.keys(stored.courses)
+        .map(Number)
+        .sort((a, b) => a - b)
+    ).toEqual(allIds);
   });
 
   test('caps stored subjects at 1, News only links to the first', async () => {
