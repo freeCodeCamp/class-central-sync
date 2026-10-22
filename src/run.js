@@ -20,9 +20,6 @@ const CHECKPOINT_EVERY = 25;
 // timeout instead of being killed mid-loop - the rest roll to the next run
 const MAX_POSTS_PER_RUN = 900;
 
-// News shows at most this many courses per post
-const MAX_COURSES_PER_POST = 4;
-
 // News uses only the first subject to link back to Class Central
 const MAX_SUBJECTS_PER_POST = 1;
 
@@ -128,9 +125,7 @@ export const run = async ({
 
       // Trim courses/subjects (see course-fields.js), then store each one
       // once in the lookup tables so repeats across posts aren't duplicated
-      const postCourses = courses
-        .slice(0, MAX_COURSES_PER_POST)
-        .map(pickCourseFields);
+      const postCourses = courses.map(pickCourseFields);
       const postSubjects = subjects
         .slice(0, MAX_SUBJECTS_PER_POST)
         .map(pickSubjectFields);
