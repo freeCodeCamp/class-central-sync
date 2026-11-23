@@ -1,6 +1,10 @@
-import dotenv from 'dotenv';
-
-dotenv.config({ quiet: true });
+// Load .env for local runs, but ignore in production because
+// DO's App Platform sets the env vars directly
+try {
+  process.loadEnvFile();
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 
 const env = process.env;
 

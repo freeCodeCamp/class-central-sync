@@ -11,8 +11,8 @@
   "main": "src/run.js",
   "scripts": {
     "start": "node ./src/run.js",
-    "dry-run": "node ./scripts/dry-run.mjs",
-    "spaces-check": "node ./scripts/spaces-check.mjs",
+    "dry-run": "node ./scripts/dry-run.js",
+    "spaces-check": "node ./scripts/spaces-check.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "pnpm run /^lint:/",
@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "dotenv": "18.0.10",
     "eslint": "10.15.0",
     "globals": "17.14.0",
     "husky": "9.1.7",
